@@ -124,11 +124,11 @@ async function run() {
     });
 
     // post the messages into userInfo for inbox
-    app.post("/messages/:id", async (req, res) => {
-      const userId = req.params.id;
+    app.post("/messages/:email", async (req, res) => {
+      const useremail = req.params.email;
       const message = req.body;
       const myEmail = req.body.email;
-      const queryUser = { _id: new ObjectId(userId), "inbox.sender": myEmail };
+      const queryUser = { email: useremail, "inbox.sender": myEmail };
 
       // Check if there is an existing inbox object for the sender
       const existingUserInbox = await userInfo.findOne(queryUser);
@@ -160,7 +160,7 @@ async function run() {
         };
 
         const result1 = await userInfo.updateOne(
-          { _id: new ObjectId(userId) },
+          { email: useremail },
           updateDoc
         );
       }
@@ -168,7 +168,7 @@ async function run() {
       // =============================
       // save this copy for senders profile
       const findSenders = await userInfo.findOne({ email: myEmail });
-      const filter = { _id: new ObjectId(userId) };
+      const filter = { email: useremail };
       const findReciver = await userInfo.findOne(filter);
 
       const queryReceiver = {
@@ -202,30 +202,103 @@ async function run() {
       }
       res.json({ message: "Message sent successfully" });
     });
+
+    // ===========================================
+    // =============================================
 
     // post the messages into userInfo for inbox from inbox by email
+    // app.post("/inboxmessages/:email", async (req, res) => {
+    //   const userEmail = req.params.email;
+    //   const message = req.body;
+    //   const myEmail = req.body.email;
+    //   const queryUser = { email: userEmail, "inbox.sender": myEmail };
+
+    //   // Check if there is an existing inbox object for the sender
+    //   const existingUserInbox = await userInfo.findOne(queryUser);
+
+    //   if (existingUserInbox) {
+    //     // Update the existing object with the new message
+    //     const updateDoc = {
+    //       $push: {
+    //         "inbox.$.messages": {
+    //           message: message.data.message,
+    //           timeStamp: new Date(),
+    //         },
+    //       },
+    //     };
+
+    //     const result = await userInfo.updateOne(queryUser, updateDoc);
+    //     console.log(result);
+    //   } else {
+    //     // Create a new inbox object for the sender
+    //     const newInboxObject = {
+    //       sender: myEmail,
+    //       senderImage: req.body.senderImage,
+    //       messages: [{ message: message.data.message, timeStamp: new Date() }],
+    //     };
+
+    //     const updateDoc = {
+    //       $push: {
+    //         inbox: newInboxObject,
+    //       },
+    //     };
+
+    //     const result1 = await userInfo.updateOne(
+    //       { email: userEmail },
+    //       updateDoc
+    //     );
+    //   }
+
+    //   // =============================
+    //   // save this copy for senders profile
+    //   const findSenders = await userInfo.findOne({ email: myEmail });
+    //   const filter = { email: userEmail, "inbox.receiver": myEmail };
+    //   const findReciver = await userInfo.findOne(filter);
+
+    //   const queryReceiver = {
+    //     "sentMessages.receiver": findReciver?.email,
+    //   };
+    //   const isReceiver = await userInfo.findOne(queryReceiver);
+    //   if (isReceiver) {
+    //     const updatedocs = {
+    //       $push: {
+    //         "sentMessages.$.messages": {
+    //           message: message.data.message,
+    //           timeStamp: new Date(),
+    //         },
+    //       },
+    //     };
+    //     const result = await userInfo.updateOne(
+    //       { email: myEmail, "sentMessages.receiver": findReciver?.email },
+    //       updatedocs
+    //     );
+    //   } else {
+    //     const uppdatedDoc = {
+    //       receiver: findReciver.email,
+    //       reciverImage: findReciver.image,
+    //       messages: [{ message: message.data.message, timeStamp: new Date() }],
+    //     };
+
+    //     const finalUpdate = {
+    //       $push: {
+    //         sentMessages: uppdatedDoc,
+    //       },
+    //     };
+
+    //     const result = await userInfo.updateOne(
+    //       { email: myEmail },
+    //       finalUpdate
+    //     );
+    //   }
+    //   res.json({ message: "Message sent successfully" });
+    // });
+
     app.post("/inboxmessages/:email", async (req, res) => {
-      const userEmail = req.params.email;
-      const message = req.body;
-      const myEmail = req.body.email;
-      const queryUser = { email: userEmail, "inbox.sender": myEmail };
+      try {
+        const userEmail = req.params.email;
+        const message = req.body;
+        const myEmail = req.body.email;
 
-      // Check if there is an existing inbox object for the sender
-      const existingUserInbox = await userInfo.findOne(queryUser);
-
-      if (existingUserInbox) {
-        // Update the existing object with the new message
-        const updateDoc = {
-          $push: {
-            "inbox.$.messages": {
-              message: message.data.message,
-              timeStamp: new Date(),
-            },
-          },
-        };
-
-        const result = await userInfo.updateOne(queryUser, updateDoc);
-      } else {
         // Create a new inbox object for the sender
         const newInboxObject = {
           sender: myEmail,
@@ -233,55 +306,40 @@ async function run() {
           messages: [{ message: message.data.message, timeStamp: new Date() }],
         };
 
-        const updateDoc = {
+        // Update the recipient's inbox with the new message
+        const updateRecipient = {
           $push: {
             inbox: newInboxObject,
           },
         };
 
-        const result1 = await userInfo.updateOne(
-          { email: userEmail },
-          updateDoc
-        );
-      }
+        await userInfo.updateOne({ email: userEmail }, updateRecipient);
 
-      // =============================
-      // save this copy for senders profile
-      const findSenders = await userInfo.findOne({ email: myEmail });
-      const filter = { email: userEmail };
-      const findReciver = await userInfo.findOne(filter);
-
-      const queryReceiver = {
-        "sentMessages.receiver": findReciver.email,
-      };
-      const isReceiver = await userInfo.findOne(queryReceiver);
-      if (isReceiver) {
-        const updatedocs = {
-          $push: {
-            "sentMessages.$.messages": {
-              message: message.data.message,
-              timeStamp: new Date(),
-            },
-          },
-        };
-        const result = await userInfo.updateOne(queryReceiver, updatedocs);
-      } else {
-        const uppdatedDoc = {
-          receiver: findReciver.email,
-          reciverImage: findReciver.image,
+        // Save a copy for the sender's profile
+        const newSentMessage = {
+          receiver: userEmail,
+          receiverImage: req.body.receiverImage,
           messages: [{ message: message.data.message, timeStamp: new Date() }],
         };
 
-        const finalUpdate = {
+        // Update the sender's sentMessages with the new message
+        const updateSender = {
           $push: {
-            sentMessages: uppdatedDoc,
+            sentMessages: newSentMessage,
           },
         };
 
-        const result = await userInfo.updateOne(findSenders, finalUpdate);
+        await userInfo.updateOne({ email: myEmail }, updateSender);
+
+        res.json({ message: "Message sent successfully" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
       }
-      res.json({ message: "Message sent successfully" });
     });
+
+    // ===========================================
+    // =============================================
 
     //get the all information by email from userInformation
     app.get("/userinfoemail/:email", async (req, res) => {
