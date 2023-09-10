@@ -40,10 +40,12 @@ async function run() {
     });
 
     // all bookmarks to DB
-    app.post("/bookamark", async (req, res) => {
+    app.post("/bookmark", async (req, res) => {
       const bookmarks = req.body;
+      console.log("bookmarkes from raeact", bookmarks);
       const result = await bookmarkCollection.insertOne(bookmarks);
-      res.send(result);
+      res.json(result);
+      console.log(result);
     });
 
     // gett bookmarked data from DB
