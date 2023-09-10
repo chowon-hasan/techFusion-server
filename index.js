@@ -354,10 +354,6 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const result = await userInfo.find(query).toArray();
-      // const inboxedUsers = result.map((c) =>
-      //   c?.sentMessages?.map((d) => d.receiver)
-      // );
-      // console.log(inboxedUsers);
       res.send(result);
     });
 
